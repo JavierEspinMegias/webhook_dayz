@@ -76,10 +76,6 @@ def pick_first_nonempty(d: dict, keys: list[str]):
     return None
 
 def extract_user_and_steam(e):
-    """
-    Devuelve (username, steamid) intentando múltiples alias.
-    Acepta dicts o strings.
-    """
     if isinstance(e, str):
         s = e.strip()
         return (s if s else "Desconocido", None)
@@ -88,7 +84,7 @@ def extract_user_and_steam(e):
         return ("Desconocido", None)
 
     uname = pick_first_nonempty(e, [
-        "username","name","nickname","steamname","steam_name",
+        "username","nickname","name","steamname","steam_name",
         "user","player","voter","display_name","Name","User","nick","title"
     ])
 
@@ -97,7 +93,6 @@ def extract_user_and_steam(e):
         "SteamID","steamid64","id"
     ])
 
-    # normaliza algunos formatos
     if sid and sid.lower().startswith("steam:"):
         sid = sid.split(":", 1)[-1].strip() or sid
 
@@ -119,6 +114,18 @@ def api_voters():
     except ValueError as e:
         print("[api] JSON error:", e)
         return {}
+
+def parse_votes(e) -> int | None:
+    """
+    Devuelve el número de votos si viene en e['votes'] (string o int).
+    """
+    v = None
+    if isinstance(e, dict) and "votes" in e:
+        try:
+            v = int(str(e["votes"]).strip())
+        except Exception:
+            v = None
+    return v
 
 def api_claim_last24h(username: str):
     """
@@ -196,15 +203,20 @@ def main():
     lines = []
     for i, e in enumerate(voters, start=1):
         uname, sid = extract_user_and_steam(e)
-
+        votes_total = parse_votes(e)  # ← nuevo
         voted24 = claimed = None
         if uname and uname != "Desconocido":
             voted24, claimed = api_claim_last24h(uname)
 
         v24_tag = "✅24h" if voted24 else ("❌24h" if voted24 is False else "??24h")
         clm_tag = "🧾" if claimed else ("no-claimed" if claimed is False else "claimed?")
+        votes_txt = f" • {votes_total} voto{'s' if (votes_total or 0) != 1 else ''} totales" if votes_total is not None else ""
 
-        lines.append(f"{i:03d}. {uname}{f' ({sid})' if sid else ''} [{v24_tag} | {clm_tag}]")
+        lines.append(
+            f"{i:03d}. {uname}"
+            f"{f' ({sid})' if sid else ''}"
+            f"{votes_txt} [{v24_tag} | {clm_tag}]"
+        )
 
     # 3) Mensaje y envío
     today = datetime.now(timezone.utc).strftime("%Y-%m-%d")
