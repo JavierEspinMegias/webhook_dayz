@@ -25,13 +25,26 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r requirements.txt
 
+      - name: Test Discord webhook
+        env:
+          DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK }}
+        run: |
+          curl -sS -X POST -H "Content-Type: application/json" \
+            -d '{"content":"✅ Webhook OK (prueba desde GitHub Actions)"}' \
+            "$DISCORD_WEBHOOK" -i
+
       - name: Run tracker
         env:
           DAYZ_SERVER_KEY: ${{ secrets.DAYZ_SERVER_KEY }}
           DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK }}
           SERVER_ID: ${{ vars.SERVER_ID }}
         run: |
-          python dayz_tracker.py
+          python - << 'PY'
+          import os
+          print("HAS DAYZ_SERVER_KEY:", bool(os.getenv("DAYZ_SERVER_KEY")))
+          print("HAS DISCORD_WEBHOOK:", bool(os.getenv("DISCORD_WEBHOOK")))
+          PY
+                    python dayz_tracker.py
 
       - name: Persist state.json
         run: |
