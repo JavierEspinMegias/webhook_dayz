@@ -30,7 +30,7 @@ jobs:
           DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK }}
         run: |
           curl -sS -X POST -H "Content-Type: application/json" \
-            -d '{"content":"✅ Webhook OK (https://github.com/JavierEspinMegias/webhook_dayz)"}' \
+            -d '{"content":"✅ Webhook OK (desde github.com)"}' \
             "$DISCORD_WEBHOOK" -i
 
       - name: Run tracker
